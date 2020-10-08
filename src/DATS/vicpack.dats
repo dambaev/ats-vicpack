@@ -1,7 +1,7 @@
 #include "share/atspre_staload.hats"
 
 #define ATS_DYNLOADFLAG 0
-staload "SATS/vicpack.sats"
+staload "./../SATS/vicpack.sats"
 
 #define LIBS_targetloc "../libs" (* search path for external libs *)
 staload "{$LIBS}/ats-bytestring/SATS/bytestring.sats"
