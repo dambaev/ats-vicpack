@@ -193,7 +193,7 @@ in
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val raw = ntohl netdata
-    val result = u322double( raw) / 65536.0 - 46.85
+    val result = u322double( raw) * 175.72 / 65536.0 - 46.85
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
