@@ -1,4 +1,3 @@
-#define ATS_DYNLOADFLAG 0
 #define ATS_PACKNAME "vicpack"
 #define ATS_EXTERN_PREFIX "vicpack"
 #include "share/atspre_staload.hats" // include template definitions
@@ -9,14 +8,14 @@ staload BS="{$LIBS}/ats-bytestring/SATS/bytestring.sats"
 datavtype Vicpack =
   | driver_info_vt of // 0x01
     @{ is_enabled=bool
-    , index=byte
-    , slot=byte
-    , type=byte
+    , index=uchar
+    , slot=uchar
+    , type=uchar
     }
   | internal_battery_on_die_vt of uint32 // 0x07
   | internal_battery_vt of double // 0x08
   | internal_temperature_vt of double // 0x0B
-  | charge_vt of sint // 0x13 says, that it is cint16, but formula uses all 4 bytes for calculations
+  | charge_vt of sint // 0x13 says, that it is cint16, but formula uses all 4 uchars for calculations
   | temperature_vt of double // 0x14
   | humidity_vt of uint32 // 0x15
   | presure_vt of uint32 // 0x16
@@ -37,8 +36,8 @@ datavtype Vicpack =
   | distance_vt of uint32 // 0x22
   | sample_rate_vt of uint32 // 0x23
   | voc_iaq_vt of // 0x2B
-    @{ state=byte
-     , index=byte
+    @{ state=uchar
+     , index=uchar
      }
   | voc_temperature_vt of double // 0x2C
   | voc_humidity_vt of double // 0x2D
@@ -46,7 +45,7 @@ datavtype Vicpack =
   | voc_ambient_light_vt of double // 0x2F
   | voc_sound_peak_vt of uint16 // 0x30
   | tof_distance_vt of // 0x31
-    @{ state=byte
+    @{ state=uchar
      , distance=uint16
      }
   | accelerometer_status_vt of uint32 // 0x32
@@ -61,3 +60,30 @@ datavtype Vicpack =
   | device_pin_vt of uint32 // 0x84
   | rssi_level_vt of uint32 // 0x85
   | cell_id_vt of uint64 // 0x86
+
+fn
+  parse
+  {len,offset,cap,ucap,refcnt: nat | len >= 6}{dynamic:bool}{l:addr}
+  ( i: &($BS.Bytestring_vtype(len, offset, cap, ucap, refcnt, dynamic, l)) >> _
+  ):
+  Option_vt( List_vt( Vicpack))
+
+fn
+  parse_package
+  {offset, cap, ucap, refcnt: nat}{dynamic:bool}{l:addr}
+  ( i: &$BS.Bytestring_vtype(5, offset, cap, ucap, refcnt, dynamic, l)
+  ):
+  Option_vt( Vicpack)
+  
+
+fn
+  free_vicpack
+  ( i: Vicpack
+  ):<!wrt>
+  void
+
+overload free with free_vicpack
+
+fn
+  print_vicpack
+  ( i: !Vicpack): void

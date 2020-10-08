@@ -25,8 +25,12 @@ ATSLIBS=
 # ATSCCFLAGS=-O2 -flto
 #
 #
-ATS_DATS=DATS/vicpack.dats
-ATS_SATS=SATS/vicpack.sats
+ATS_DATS=\
+	../libs/ats-bytestring/DATS/bytestring_flat.dats \
+	DATS/vicpack.dats
+ATS_SATS=\
+	../libs/ats-bytestring/SATS/bytestring.sats \
+	SATS/vicpack.sats
 ######
 #
 
@@ -45,10 +49,11 @@ cleanall::
 #
 
 
-test:
+test: \
+		test1
 
-#test1: $(ATS_OBJS)
-#	$(ATSCC) $(ATSCCFLAGS) -o $@ $(ATS_OBJS) TEST/test1.dats $(ATSLIBS)
+test1: $(ATS_OBJS)
+	$(ATSCC) $(ATSCCFLAGS) -o $@ $(ATS_OBJS) TEST/test1.dats $(ATSLIBS)
 cleanall:: ; $(RMF) test*
 #
 ######
