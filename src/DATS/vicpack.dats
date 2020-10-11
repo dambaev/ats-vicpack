@@ -102,7 +102,7 @@ let
   val packages_count_i = g1ofg0( uc2i( s[4]))
 in
   if packages_count_i < 0
-  then None_vt() where {
+  then list_vt_nil() where {
     val () = $BS.free( i, s)
   }
   else
@@ -110,19 +110,16 @@ in
     val packages_count = i2sz packages_count_i
   in
     ifcase
-    | s[0] != i2uc 0xFA => None_vt() where {
-      val () = println!("wrong header")
+    | s[0] != i2uc 0xFA => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
-    | packages_count > 255 => None_vt() where {
-      val () = println!("wrong packages count")
+    | packages_count > 255 => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
-    | $BS.length i < packages_count * (i2sz 5) => None_vt() where {
-      val () = println!("wrong length of input")
+    | $BS.length i < packages_count * (i2sz 5) => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
-    | _ => Some_vt( res) where {
+    | _ => res where {
       val res = parse_packages( packages_count, list_vt_nil(), i)
       val () = $BS.free( i, s)
     }

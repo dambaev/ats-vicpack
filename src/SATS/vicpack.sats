@@ -66,7 +66,7 @@ fn
   {len,offset,cap,ucap,refcnt: nat | len >= 6}{dynamic:bool}{l:addr}
   ( i: &($BS.Bytestring_vtype(len, offset, cap, ucap, refcnt, dynamic, l)) >> _
   ):
-  Option_vt( List0_vt( Vicpack))
+  List0_vt( Vicpack)
 
 fn
   parse_package

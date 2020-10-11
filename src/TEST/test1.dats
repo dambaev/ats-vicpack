@@ -39,8 +39,8 @@ implement main0() = {
   val () = s := $BS.pack( view@raw| addr@raw, i2sz 23, i2sz 23)
   val () =
     case+ $Vicpack.parse s of
-    | ~None_vt() => ()
-    | ~Some_vt( packages) => {
+    | ~list_vt_nil() => ()
+    | packages => {
       implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
         val () = $Vicpack.print_vicpack( x)
       }
