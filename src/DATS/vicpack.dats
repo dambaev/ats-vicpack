@@ -5,6 +5,7 @@ staload "./../SATS/vicpack.sats"
 
 #define LIBS_targetloc "../libs" (* search path for external libs *)
 staload "{$LIBS}/ats-bytestring/SATS/bytestring.sats"
+staload UN="prelude/SATS/unsafe.sats"
 
 %{^
 #include "arpa/inet.h"
@@ -133,6 +134,10 @@ case+ uc2i i of
 | _ => true
 
 extern fn
+  ntohs
+  (i: uint16
+  ):<> uint16 = "mac#"
+extern fn
   ntohl
   (i: uint32
   ):<> uint32 = "mac#"
@@ -152,15 +157,60 @@ extern prfun
   ):<> void
 
 extern castfn
+  int2double( i: int):<> double
+
+extern castfn
+  u162double( i: uint16):<> double
+
+extern castfn
   u322double( i: uint32):<> double
 
 extern castfn
   u322uint( i: uint32):<> uint
 
 extern castfn
+  uint162int
+  ( i: uint16
+  ):<> int
+
+extern castfn
+  uint162uc
+  ( i: uint16
+  ):<> uchar
+
+extern castfn
+  i2u16
+  {n: nat}
+  ( i: int n):<> uint16
+
+extern castfn
   i2u32
   {n: nat}
   ( i: int n):<> uint32
+
+extern castfn
+  uint162uint
+  ( i: uint16
+  ):<> uint
+
+%{
+
+uint16_t
+  lsbtohs( uint16_t i)
+{
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN
+  return i;
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN
+  return ((( i >> 8) & 0xFF) | ((i & 0xFF) << 8))
+#endif
+}
+
+%}
+
+extern fn
+  lsbtohs
+  ( i: uint16
+  ):<> uint16 = "mac#"
 
 implement parse_package( s) =
 let
@@ -222,6 +272,80 @@ in
     val () = data := data1
     val () = $BS.free( data, s)
   }
+  | 0x2B => Some_vt( voc_iaq_vt( @{state = uint162uc state, index=index} )) where {
+    var data: $BS.Bytestring0?
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint16}( pf )
+    val netdata:uint16 = !ptr
+    val raw_value = lsbtohs netdata
+    val state = g0uint_land_uint16(g0uint_lsr_uint16( raw_value, 14), i2u16(3))
+    val index = g0uint_land_uint16(raw_value, i2u16 0x3FFF)
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  }
+  | 0x2C => Some_vt( voc_temperature_vt( u162double(raw_value) / 10.0 )) where {
+    var data: $BS.Bytestring0?
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint16}( pf )
+    val netdata = !ptr
+    val raw_value = lsbtohs netdata
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  }
+  | 0x2D => Some_vt( voc_humidity_vt( u162double(raw_value) / 10.0 )) where {
+    var data: $BS.Bytestring0?
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint16}( pf )
+    val netdata = !ptr
+    val raw_value = lsbtohs netdata
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  }
+  | 0x2E => Some_vt( voc_pressure_vt( u162double(raw_value) * 10.0 )) where {
+    var data: $BS.Bytestring0?
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint16}( pf )
+    val netdata = !ptr
+    val raw_value = lsbtohs netdata
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  }
+  | 0x2F =>
+  let
+    var data: $BS.Bytestring0?
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint16}( pf )
+    val netdata = !ptr
+    val raw_value = lsbtohs netdata
+    val exp = g1ofg0( uint162int(g0uint_lsr_uint16( raw_value, 12)))
+    val mantissa = g0uint_land_uint16( raw_value, $UN.cast{uint16}4095)
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  in
+    if exp < 0
+    then None_vt()
+    else Some_vt( voc_pressure_vt( u162double(mantissa) * 0.01 * int2double( g0int_npow(2, exp)) ))
+  end
   | _ => None_vt() where {
     val () = println!( "no parser for ", package_type )
   }

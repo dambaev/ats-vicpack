@@ -17,7 +17,7 @@ implement main0() = {
                    , int2byte(0x01)
                    , int2byte(0x3c)
                    , int2byte(0x00)
-                   , int2byte(0x03)
+                   , int2byte(0x04)
                    , int2byte(0x01) //
                    , int2byte(0x02)
                    , int2byte(0x00)
@@ -33,10 +33,15 @@ implement main0() = {
                    , int2byte(0x00)
                    , int2byte(0x59)
                    , int2byte(0x06)
+                   , int2byte(0x21) //
+                   , int2byte(0x00)
+                   , int2byte(0x00)
+                   , int2byte(0x00)
+                   , int2byte(0x00)
                    , int2byte(0xce) //
                    , int2byte(0xf9)
                    , int2byte(0x98))
-  val () = s := $BS.pack( view@raw| addr@raw, i2sz 23, i2sz 23)
+  val () = s := $BS.pack( view@raw| addr@raw, i2sz 28, i2sz 28)
   val () =
     case+ $Vicpack.parse s of
     | ~list_vt_nil() => ()

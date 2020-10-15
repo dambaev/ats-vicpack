@@ -37,7 +37,7 @@ datavtype Vicpack =
   | sample_rate_vt of uint32 // 0x23
   | voc_iaq_vt of // 0x2B
     @{ state=uchar
-     , index=uchar
+     , index=uint16
      }
   | voc_temperature_vt of double // 0x2C
   | voc_humidity_vt of double // 0x2D
