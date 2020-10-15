@@ -344,7 +344,7 @@ in
   in
     if exp < 0
     then None_vt()
-    else Some_vt( voc_pressure_vt( u162double(mantissa) * 0.01 * int2double( g0int_npow(2, exp)) ))
+    else Some_vt( voc_ambient_light_vt( u162double(mantissa) * 0.01 * int2double( g0int_npow(2, exp)) ))
   end
   | 0x30 => Some_vt( voc_sound_peak_vt( g0uint_div_uint16( raw_value, i2u16 10) )) where {
     var data: $BS.Bytestring0?
