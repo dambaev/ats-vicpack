@@ -346,7 +346,7 @@ in
     then None_vt()
     else Some_vt( voc_pressure_vt( u162double(mantissa) * 0.01 * int2double( g0int_npow(2, exp)) ))
   end
-  | 0x30 => Some_vt( voc_sound_peak_vt( raw_value / 10 )) where {
+  | 0x30 => Some_vt( voc_sound_peak_vt( g0uint_div_uint16( raw_value, i2u16 10) )) where {
     var data: $BS.Bytestring0?
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
