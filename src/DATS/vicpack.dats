@@ -193,24 +193,11 @@ extern castfn
   ( i: uint16
   ):<> uint
 
-%{
-
-uint16_t
-  lsbtohs( uint16_t i)
-{
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN
-  return i;
-#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN
-  return ((( i >> 8) & 0xFF) | ((i & 0xFF) << 8))
-#endif
-}
-
-%}
-
-extern fn
-  lsbtohs
-  ( i: uint16
-  ):<> uint16 = "mac#"
+extern castfn
+  u322u16
+  ( i: uint32
+  ):<> uint16
+  
 
 implement parse_package( s) =
 let
@@ -277,9 +264,9 @@ in
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata:uint16 = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata:uint32 = ntohl !ptr
+    val raw_value = ntohs ( u322u16 netdata)
     val state = g0uint_land_uint16(g0uint_lsr_uint16( raw_value, 14), i2u16(3))
     val index = g0uint_land_uint16(raw_value, i2u16 0x3FFF)
     prval () = bytes_addback( pf, pf1)
@@ -292,22 +279,23 @@ in
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata:uint32 = ntohl !ptr
+    val raw_value = g0uint_land_uint16( ntohs (u322u16 netdata), i2u16 0xFFFF)
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
   }
-  | 0x2D => Some_vt( voc_humidity_vt( u162double(raw_value) / 10.0 )) where {
+  (* TODO: there is an error either in manual, which says / 10.0 and vicpack.js, which uses / 100.0 *)
+  | 0x2D => Some_vt( voc_humidity_vt( u162double(raw_value) / 100.0 )) where {
     var data: $BS.Bytestring0?
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata = ntohl !ptr
+    val raw_value = g0uint_land_uint16( ntohs (u322u16 netdata), i2u16 0xFFFF)
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
@@ -318,9 +306,9 @@ in
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata = ntohl !ptr
+    val raw_value = ntohs( u322u16 netdata)
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
@@ -332,9 +320,9 @@ in
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata = ntohl !ptr
+    val raw_value = ntohs (u322u16 netdata)
     val exp = g1ofg0( uint162int(g0uint_lsr_uint16( raw_value, 12)))
     val mantissa = g0uint_land_uint16( raw_value, $UN.cast{uint16}4095)
     prval () = bytes_addback( pf, pf1)
@@ -351,9 +339,9 @@ in
     val () = data := ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
-    prval pf1 = bytes_takeout{uint16}( pf )
-    val netdata = !ptr
-    val raw_value = lsbtohs netdata
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata = ntohl !ptr
+    val raw_value = ntohs (u322u16 netdata)
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
@@ -408,18 +396,18 @@ implement print_vicpack( i) =
     println!("distance")
   | sample_rate_vt(_) =>
     println!("sample_rate")
-  | voc_iaq_vt(_) =>
-    println!("voc_iaq")
-  | voc_temperature_vt(_) =>
-    println!("voc_temperature")
-  | voc_humidity_vt(_) =>
-    println!("voc_humidity")
-  | voc_pressure_vt(_) =>
-    println!("voc_pressure")
-  | voc_ambient_light_vt(_) =>
-    println!("voc_ambient_light")
-  | voc_sound_peak_vt(_) =>
-    println!("voc_sound_peak")
+  | voc_iaq_vt(v) =>
+    println!("voc_iaq= state=", uc2i v.state, ", index=", v.index)
+  | voc_temperature_vt(t) =>
+    println!("voc_temperature=", t)
+  | voc_humidity_vt(v) =>
+    println!("voc_humidity=", v)
+  | voc_pressure_vt(p) =>
+    println!("voc_pressure=", p)
+  | voc_ambient_light_vt(v) =>
+    println!("voc_ambient_light=", v)
+  | voc_sound_peak_vt(v) =>
+    println!("voc_sound_peak=", v)
   | tof_distance_vt(_) =>
     println!("tof_distance")
   | accelerometer_status_vt(_) =>
