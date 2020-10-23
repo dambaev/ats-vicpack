@@ -219,6 +219,58 @@ in
     val () = data := data1
     val () = $BS.free( data, s)
   }
+  | 0x08 => Some_vt( internal_battery_vt result) where {
+    var data: $BS.Bytestring0?
+    var meas = @[double]( 3.32211667225159
+                        , 2.80515334784856
+                        , 2.40084388357319
+                        , 2.29739470604636
+                        , 1.8957659397271
+                        , 1.59635358098812
+                        )
+    var real = @[double]( 3.46
+                        , 3.1
+                        , 2.71
+                        , 2.99
+                        , 2.8
+                        , 2.66
+                        )
+    val meas_sz = i2sz 6
+    val () = data := ref_bs_parent s
+    val () = data := $BS.dropC( i2sz 1, data)
+    val ( pf | ptr, sz) = $BS.bs2bytes data
+    prval pf1 = bytes_takeout{uint32}( pf )
+    val netdata = !ptr
+    val raw = ntohl netdata
+    val volt = u322double( raw) * (0.18 / (int2double(g0int_npow(2, 10)))) * 2.0
+    val ofnd = loop( i2sz 0, meas, meas_sz) where {
+      fun
+        loop
+        {n:nat}{m:nat | n + 1 <= m}
+        .<m - n>.
+        ( i: size_t n
+        , arr: &(@[double][m])
+        , sz: size_t m
+        ):<>
+        Option_vt( @([n1:nat | n1 + 1 < m] size_t(n1), double)) =
+      if i + 1 = sz
+      then None_vt()
+      else
+        if (volt >= arr[i]) && (volt <= arr[i + i2sz 1])
+        then Some_vt( (i, norm)) where {
+          val norm = (volt - arr[ i + i2sz 1]) / (arr[i] - arr[i + i2sz 1])
+        }
+        else loop( i + i2sz 1, arr, sz)
+    }
+    val result =
+      case+ ofnd of
+      | ~None_vt() => volt
+      | ~Some_vt( @(i, norm)) => real[ i + i2sz 1] - real[ i + i2sz 1] * norm + real[i] * norm
+    prval () = bytes_addback( pf, pf1)
+    val data1 = minus_addback( pf | data)
+    val () = data := data1
+    val () = $BS.free( data, s)
+  }
   | 0x14 => Some_vt( temperature_vt(result )) where {
     var data: $BS.Bytestring0?
     val () = data := ref_bs_parent s
