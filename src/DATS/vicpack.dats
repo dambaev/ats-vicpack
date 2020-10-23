@@ -242,6 +242,7 @@ in
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val raw = ntohl netdata
+(* manual defines this way of handling of this package, but the reference implementation just divides raw value on 1000000.0 and has the same code commented out
     val volt = u322double( raw) * (0.18 / (int2double(g0int_npow(2, 10)))) * 2.0
     val ofnd = loop( i2sz 0, meas, meas_sz) where {
       fun
@@ -266,6 +267,8 @@ in
       case+ ofnd of
       | ~None_vt() => volt
       | ~Some_vt( @(i, norm)) => real[ i + i2sz 1] - real[ i + i2sz 1] * norm + real[i] * norm
+*)
+    val result = u322double( raw) / 1000000.0
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
