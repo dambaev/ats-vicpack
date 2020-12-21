@@ -4,7 +4,7 @@
 staload "./../SATS/vicpack.sats"
 
 #define LIBS_targetloc "../libs" (* search path for external libs *)
-staload "{$LIBS}/ats-bytestring/SATS/bytestring.sats"
+#include "{$LIBS}/ats-bytestring/HATS/bytestring.hats"
 staload UN="prelude/SATS/unsafe.sats"
 
 %{^
@@ -68,7 +68,7 @@ extern castfn
 
 implement parse( s) =
 let
-  prval () = lemma_bytestring_param(s)
+  prval () = $BS.lemma_bytestring_param(s)
   fun
     parse_packages
     {n,ln : nat | n <= 255}
@@ -76,13 +76,13 @@ let
     .<n>.
     ( i: size_t n
     , acc: list_vt( Vicpack, ln)
-    , s: &($BS.Bytestring_vtype(ilen, ioffset, cap, ucap, refcnt, dynamic, l)) >> Bytestring_vtype( olen, ooffset, cap, ucap, refcnt, dynamic, l)
+    , s: &($BS.Bytestring_vtype(ilen, ioffset, cap, ucap, refcnt, dynamic, l)) >> $BS.Bytestring_vtype( olen, ooffset, cap, ucap, refcnt, dynamic, l)
     ):
     #[olen,ooffset,oln: nat]
     list_vt( Vicpack, oln) =
     ifcase
     | i = i2sz 0 => acc
-    | $BS.length s < i2sz 5 => acc
+    | length s < i2sz 5 => acc
     | _ =>
     let
       var package_s: $BS.Bytestring0?
@@ -117,7 +117,7 @@ in
     | packages_count > 255 => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
-    | $BS.length i < packages_count * (i2sz 5) => list_vt_nil() where {
+    | length i < packages_count * (i2sz 5) => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
     | _ => res where {
@@ -208,7 +208,7 @@ in
   | 0x01 => Some_vt( driver_info_vt( @{ is_enabled=uc2bool( s[1]), index=s[2], slot=s[3], type=s[4]}))
   | 0x07 => Some_vt( internal_battery_on_die_vt( result )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -236,7 +236,7 @@ in
                         , 2.66
                         )
     val meas_sz = i2sz 6
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -276,7 +276,7 @@ in
   }
   | 0x14 => Some_vt( temperature_vt(result )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -290,7 +290,7 @@ in
   }
   | 0x15 => Some_vt( humidity_vt(result )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -303,7 +303,7 @@ in
   }
   | 0x21 => Some_vt( co2_level_vt(result )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -316,7 +316,7 @@ in
   }
   | 0x2B => Some_vt( voc_iaq_vt( @{state = uint162uc state, index=index} )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -331,7 +331,7 @@ in
   }
   | 0x2C => Some_vt( voc_temperature_vt( u162double(raw_value) / 10.0 )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -345,7 +345,7 @@ in
   (* TODO: there is an error either in manual, which says / 10.0 and vicpack.js, which uses / 100.0 *)
   | 0x2D => Some_vt( voc_humidity_vt( u162double(raw_value) / 100.0 )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -358,7 +358,7 @@ in
   }
   | 0x2E => Some_vt( voc_pressure_vt( u162double(raw_value) * 10.0 )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -372,7 +372,7 @@ in
   | 0x2F =>
   let
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
@@ -391,7 +391,7 @@ in
   end
   | 0x30 => Some_vt( voc_sound_peak_vt( g0uint_div_uint16( raw_value, i2u16 10) )) where {
     var data: $BS.Bytestring0?
-    val () = data := ref_bs_parent s
+    val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
