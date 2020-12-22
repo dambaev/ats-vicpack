@@ -55,7 +55,7 @@ datavtype Vicpack =
   | falling_counter_vt of uint32 // 0x37
   | rising_counter_vt of uint32 // 0x38
   | gps_data_vt of uint32 // 0x51
-  | eco2_vt of // 0x52
+  | eco2_and_pir_vt of // 0x52
     @{ eTVOC = uint32
      , eCO2 = uint32
      , PIR_Present = bool
