@@ -13,57 +13,58 @@ staload UN="prelude/SATS/unsafe.sats"
 
 implement free_vicpack( i) =
   case+ i of
-  | ~driver_info_vt(_) => ()
+//  | ~driver_info_vt(_) => ()
   | ~internal_battery_on_die_vt(_) => ()
   | ~internal_battery_vt(_) => ()
-  | ~internal_temperature_vt(_) => ()
-  | ~charge_vt(_) => ()
+//  | ~internal_temperature_vt(_) => ()
+//  | ~charge_vt(_) => ()
   | ~temperature_vt(_) => ()
   | ~humidity_vt(_) => ()
-  | ~presure_vt(_) => ()
-  | ~acceleration_x_vt(_) => ()
-  | ~acceleration_y_vt(_) => ()
-  | ~acceleration_z_vt(_) => ()
-  | ~switch_interrupt_vt(_) => ()
-  | ~audio_average_vt(_) => ()
-  | ~audio_max_vt(_) => ()
-  | ~audio_spl_vt(_) => ()
-  | ~ambient_light_visible_vt(_) => ()
-  | ~ambient_light_ir_vt(_) => ()
-  | ~ambient_light_uv_vt(_) => ()
+//  | ~presure_vt(_) => ()
+//  | ~acceleration_x_vt(_) => ()
+//  | ~acceleration_y_vt(_) => ()
+//  | ~acceleration_z_vt(_) => ()
+//  | ~switch_interrupt_vt(_) => ()
+//  | ~audio_average_vt(_) => ()
+//  | ~audio_max_vt(_) => ()
+//  | ~audio_spl_vt(_) => ()
+//  | ~ambient_light_visible_vt(_) => ()
+//  | ~ambient_light_ir_vt(_) => ()
+//  | ~ambient_light_uv_vt(_) => ()
   | ~co2_level_vt(_) => ()
-  | ~distance_vt(_) => ()
-  | ~sample_rate_vt(_) => ()
+//  | ~distance_vt(_) => ()
+//  | ~sample_rate_vt(_) => ()
   | ~voc_iaq_vt(_) => ()
   | ~voc_temperature_vt(_) => ()
   | ~voc_humidity_vt(_) => ()
   | ~voc_pressure_vt(_) => ()
   | ~voc_ambient_light_vt(_) => ()
   | ~voc_sound_peak_vt(_) => ()
-  | ~tof_distance_vt(_) => ()
-  | ~accelerometer_status_vt(_) => ()
-  | ~voltage_vt(_) => ()
-  | ~voltage_dff_vt(_) => ()
-  | ~voltage_ref_vt(_) => ()
-  | ~falling_counter_vt(_) => ()
-  | ~rising_counter_vt(_) => ()
-  | ~gps_data_vt(_) => ()
-  | ~eco2_vt(_) => ()
-  | ~device_id_vt(_) => ()
-  | ~device_pin_vt(_) => ()
-  | ~rssi_level_vt(_) => ()
-  | ~cell_id_vt(_) => ()
+//  | ~tof_distance_vt(_) => ()
+//  | ~accelerometer_status_vt(_) => ()
+//  | ~voltage_vt(_) => ()
+//  | ~voltage_dff_vt(_) => ()
+//  | ~voltage_ref_vt(_) => ()
+//  | ~falling_counter_vt(_) => ()
+//  | ~rising_counter_vt(_) => ()
+//  | ~gps_data_vt(_) => ()
+//  | ~eco2_and_pir_vt(_) => ()
+//  | ~evoc_eco2_vt(_) => ()
+//  | ~device_id_vt(_) => ()
+//  | ~device_pin_vt(_) => ()
+//  | ~rssi_level_vt(_) => ()
+//  | ~cell_id_vt(_) => ()
 
 (* converts integer to byte *)
 extern castfn
-  i2uc
+  i2c
   {n: nat | n <= 255}
   ( i: int n
-  ):<> uchar(n)
+  ):<> char(n)
   
 extern castfn
-  uc2i
-  ( i: uchar
+  c2i
+  ( i: char
   ):<> int
 
 implement parse( s) =
@@ -100,7 +101,7 @@ let
   var i: $BS.Bytestring0?
   val () = i := $BS.ref_bs_parent s
   val () = i := $BS.dropC( i2sz 5, i) // without header
-  val packages_count_i = g1ofg0( uc2i( s[4]))
+  val packages_count_i = g1ofg0( $UN.cast{int} ( s[4]))
 in
   if packages_count_i < 0
   then list_vt_nil() where {
@@ -111,7 +112,7 @@ in
     val packages_count = i2sz packages_count_i
   in
     ifcase
-    | s[0] != i2uc 0xFA => list_vt_nil() where {
+    | s[0] != i2c 0xFA => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
     | packages_count > 255 => list_vt_nil() where {
@@ -128,8 +129,8 @@ in
 end
 
 fn
-  uc2bool (i: uchar):<> bool =
-case+ uc2i i of
+  c2bool (i: char):<> bool =
+case+ c2i i of
 | 0 => false
 | _ => true
 
@@ -145,14 +146,14 @@ extern fn
 extern prfun
   bytes_takeout
   {a:t0ype}{n: nat}{l:addr}
-  ( i: !(bytes(n) @ l) >> ( bytes(n) @ l, a @ l)
+  ( i: !array_v(char, l, n) >> ( array_v(char, l, n), a @ l)
   ):<>
   a @ l
 
 extern prfun
   bytes_addback
   {a:t0ype}{n: nat}{l:addr}
-  ( i: !( bytes(n) @ l, a @ l) >> (bytes(n) @ l)
+  ( i: !( array_v(char, l, n), a @ l) >> (array_v(char, l, n))
   , i1: a @ l
   ):<> void
 
@@ -202,10 +203,10 @@ extern castfn
 implement parse_package( s) =
 let
   prval () = $BS.lemma_bytestring_param( s)
-  val package_type = uc2i( s[0])
+  val package_type = c2i( s[0])
 in
   case+ package_type of
-  | 0x01 => Some_vt( driver_info_vt( @{ is_enabled=uc2bool( s[1]), index=s[2], slot=s[3], type=s[4]}))
+//  | 0x01 => Some_vt( driver_info_vt( @{ is_enabled=c2bool( s[1]), index=s[2], slot=s[3], type=s[4]}))
   | 0x07 => Some_vt( internal_battery_on_die_vt( result )) where {
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
@@ -402,57 +403,87 @@ in
     val () = data := data1
     val () = $BS.free( data, s)
   }
-  | _ => None_vt() where {
-    val () = println!( "no parser for ", package_type )
-  }
+  | _ => None_vt()
 end
 
 implement print_vicpack( i) =
   case+ i of
+(*
   | driver_info_vt( s) =>
-    println!( "DRIVER_INFO: is_enabled = ", s.is_enabled, ", index=", uc2i s.index, ", slot=", uc2i s.slot, ", type=", uc2i s.type)
+    println!( "DRIVER_INFO: is_enabled = ", s.is_enabled, ", index=", c2i s.index, ", slot=", c2i s.slot, ", type=", c2i s.type)
+*)
   | internal_battery_on_die_vt(_) =>
     println!("internal_battery_on_die")
   | internal_battery_vt(_) =>
     println!("internal_battery")
+(*  
   | internal_temperature_vt(_) =>
     println!("internal_temperature")
+*)
+(*  
   | charge_vt(_) =>
     println!("charge")
+*)
   | temperature_vt( value) =>
     println!("temperature: ", value)
   | humidity_vt( value) =>
     println!("humidity: ", value)
+(*  
   | presure_vt(_) =>
     println!("presure")
+*)
+(*  
   | acceleration_x_vt(_) =>
     println!("acceleration_x")
+*)
+(*  
   | acceleration_y_vt(_) =>
     println!("acceleration_y")
+*)
+(*  
   | acceleration_z_vt(_) =>
     println!("acceleration_z")
+*)
+(*  
   | switch_interrupt_vt(_) =>
     println!("switch_interrupt")
+*)
+(*  
   | audio_average_vt(_) =>
     println!("audio_average")
+*)
+(*  
   | audio_max_vt(_) =>
     println!("audio_max")
+*)
+(*  
   | audio_spl_vt(_) =>
     println!("audio_spl")
+*)
+(*  
   | ambient_light_visible_vt(_) =>
     println!("ambient_light_visible")
+*)
+(*  
   | ambient_light_ir_vt(_) =>
     println!("ambient_light_ir")
+*)
+(*  
   | ambient_light_uv_vt(_) =>
     println!("ambient_light_uv")
+*)
   | co2_level_vt(_) =>
     println!("co2_level")
+(*  
   | distance_vt(_) =>
     println!("distance")
+*)
+(*  
   | sample_rate_vt(_) =>
     println!("sample_rate")
+*)
   | voc_iaq_vt(v) =>
-    println!("voc_iaq= state=", uc2i v.state, ", index=", v.index)
+    println!("voc_iaq= state=", $UN.cast{int}v.state, ", index=", v.index)
   | voc_temperature_vt(t) =>
     println!("voc_temperature=", t)
   | voc_humidity_vt(v) =>
@@ -463,29 +494,182 @@ implement print_vicpack( i) =
     println!("voc_ambient_light=", v)
   | voc_sound_peak_vt(v) =>
     println!("voc_sound_peak=", v)
+(*  
   | tof_distance_vt(_) =>
     println!("tof_distance")
+*)
+(*  
   | accelerometer_status_vt(_) =>
     println!("accelerometer_status")
+*)
+(*  
   | voltage_vt(_) =>
     println!("voltage")
+*)
+(*  
   | voltage_dff_vt(_) =>
     println!("voltage_dff")
+*)
+(*  
   | voltage_ref_vt(_) =>
     println!("voltage_ref")
+*)
+(*  
   | falling_counter_vt(_) =>
     println!("falling_counter")
+*)
+(*  
   | rising_counter_vt(_) =>
     println!("rising_counter")
+*)
+(*  
   | gps_data_vt(_) =>
     println!("gps_data")
-  | eco2_vt(_) =>
-    println!("eco2")
+*)
+(*  
+  | eco2_and_pir_vt(_) =>
+    println!("eco2_and_pir")
+*)
+(*  
+  | evoc_eco2_vt(_) =>
+    println!("evoc_eco2")
+*)
+(*  
   | device_id_vt(_) =>
     println!("device_id")
+*)
+(*  
   | device_pin_vt(_) =>
     println!("device_pin")
+*)
+(*  
   | rssi_level_vt(_) =>
     println!("rssi_level")
+*)
+(*  
   | cell_id_vt(_) =>
     println!("cell_id")
+*)
+
+infixr (+) ::
+overload :: with list_vt_cons
+
+infixl (+) +++
+overload +++ with list_vt_cons
+
+implement package2kvs( i) = 
+  case+ i of
+(*
+  | driver_info_vt( s) =>
+    ( $BS.pack "DRIVER_INFO.enabled", $BS.pack s.is_enabled)
+    :: ( $BS.pack "DRIVER_INFO.index", $BS.pack s.index)
+    :: ( $BS.pack "DRIVER_INFO.slot", $BS.pack s.slot)
+    :: ( $BS.pack "DRIVER_INFO.type", $BS.pack s.type)
+    :: list_vt_nil()
+*)
+  | internal_battery_on_die_vt(v) =>
+    list_vt_cons( ( $BS.pack "internal_battery_on_die", $BS.pack v), list_vt_nil())
+  | internal_battery_vt(v) =>
+    list_vt_cons( ( $BS.pack "internal_battery", $BS.pack v), list_vt_nil())
+(*  | internal_temperature_vt(v) =>
+    ( $BS.pack "internal_temperature", $BS.pack v)
+    :: list_vt_nil()
+  | charge_vt(v) =>
+    ( $BS.pack "charge", $BS.pack v)
+    :: list_vt_nil()
+*)
+  | temperature_vt( v) =>
+    list_vt_cons( ( $BS.pack "temperature", $BS.pack v), list_vt_nil())
+  | humidity_vt( v) =>
+    list_vt_cons( ( $BS.pack "humidity", $BS.pack v), list_vt_nil())
+(*
+  | presure_vt(v) =>
+    ( $BS.pack "presure", $BS.pack v)
+    :: list_vt_nil()
+  | acceleration_x_vt(v) =>
+    ( $BS.pack "acceleration_x", $BS.pack v)
+    :: list_vt_nil()
+  | acceleration_y_vt(v) =>
+    ( $BS.pack "acceleration_y", $BS.pack v)
+    :: list_vt_nil()
+  | acceleration_z_vt(v) =>
+    ( $BS.pack "acceleration_z", $BS.pack v)
+    :: list_vt_nil()
+  | switch_interrupt_vt(v) =>
+    ( $BS.pack "switch_interrupt.button_pressed", $BS.pack v.button_pressed)
+    ( $BS.pack "switch_interrupt.pin", $BS.pack v.pin)
+    :: list_vt_nil()
+  | audio_average_vt(v) =>
+    ( $BS.pack "audio_average", $BS.pack v)
+    :: list_vt_nil()
+  | audio_max_vt(v) =>
+    ( $BS.pack "audio_max", $BS.pack v)
+    :: list_vt_nil()
+  | audio_spl_vt(v) =>
+    ( $BS.pack "audio_spl", $BS.pack v)
+    :: list_vt_nil()
+  | ambient_light_visible_vt(v) =>
+    ( $BS.pack "ambient_light_visible", $BS.pack v)
+    :: list_vt_nil()
+  | ambient_light_ir_vt(v) =>
+    ( $BS.pack "ambient_light_ir", $BS.pack v)
+    :: list_vt_nil()
+  | ambient_light_uv_vt(v) =>
+    ( $BS.pack "ambient_light_uv", $BS.pack v)
+    :: list_vt_nil()
+*)
+  | co2_level_vt(v) =>
+    list_vt_cons( ( $BS.pack "co2_level", $BS.pack v), list_vt_nil())
+(*
+  | distance_vt(v) =>
+    ( $BS.pack "distance", $BS.pack v)
+    :: list_vt_nil()
+  | sample_rate_vt(v) =>
+    ( $BS.pack "sample_rate", $BS.pack v)
+    :: list_vt_nil()
+*)
+  | voc_iaq_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_iaq.state", $BS.pack ($UN.cast{char} v.state))
+      , list_vt_cons( ( $BS.pack "voc_iaq.index", $BS.pack v.index)
+        , list_vt_nil()
+        )
+      )
+  | voc_temperature_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_temperature", $BS.pack v), list_vt_nil())
+  | voc_humidity_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_humidity", $BS.pack v), list_vt_nil())
+  | voc_pressure_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_pressure", $BS.pack v), list_vt_nil())
+  | voc_ambient_light_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_ambient_light", $BS.pack v), list_vt_nil())
+  | voc_sound_peak_vt(v) =>
+    list_vt_cons( ( $BS.pack "voc_sound_peak", $BS.pack v), list_vt_nil())
+(*  | tof_distance_vt(v) =>
+    println!("tof_distance")
+  | accelerometer_status_vt(v) =>
+    println!("accelerometer_status")
+  | voltage_vt(v) =>
+    println!("voltage")
+  | voltage_dff_vt(v) =>
+    println!("voltage_dff")
+  | voltage_ref_vt(v) =>
+    println!("voltage_ref")
+  | falling_counter_vt(v) =>
+    println!("falling_counter")
+  | rising_counter_vt(v) =>
+    println!("rising_counter")
+  | gps_data_vt(v) =>
+    println!("gps_data")
+  | eco2_and_pir_vt(v) =>
+    println!("eco2_and_pir")
+  | evoc_eco2_vt(v) =>
+    println!("evoc_eco2")
+  | device_id_vt(v) =>
+    println!("device_id")
+  | device_pin_vt(v) =>
+    println!("device_pin")
+  | rssi_level_vt(v) =>
+    println!("rssi_level")
+  | cell_id_vt(v) =>
+    println!("cell_id")
+*)
