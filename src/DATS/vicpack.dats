@@ -629,7 +629,7 @@ implement package2kvs( i) =
     :: list_vt_nil()
 *)
   | voc_iaq_vt(v) =>
-    list_vt_cons( ( $BS.pack "voc_iaq.state", $BS.pack ($UN.cast{char} v.state))
+    list_vt_cons( ( $BS.pack "voc_iaq.state", $BS.pack ($UN.cast{uint32} v.state))
       , list_vt_cons( ( $BS.pack "voc_iaq.index", $BS.pack v.index)
         , list_vt_nil()
         )
