@@ -97,9 +97,10 @@ fn
 
 fn
   parse_package
-  {offset, cap, ucap, refcnt: nat}{dynamic:bool}{l:addr}
-  ( i: &$BS.Bytestring_vtype(5, offset, cap, ucap, refcnt, dynamic, l)
+  {len,offset, cap, ucap, refcnt: nat | len >= 5; len == (len / 5) * 5}{dynamic:bool}{l:agz}
+  ( i: &$BS.Bytestring_vtype(len, offset, cap, ucap, refcnt, dynamic, l) >> $BS.Bytestring_vtype( olen, ooffset, cap, ucap, refcnt, dynamic, l)
   ):
+  #[olen,ooffset:nat | olen == (olen / 5) * 5; olen < len]
   Option_vt( Vicpack)
   
 

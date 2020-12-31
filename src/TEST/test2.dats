@@ -48,19 +48,16 @@ implement main0() = {
                    , int2byte 0xb2
                    )
   val () = s := $BS.pack( view@raw| addr@raw, i2sz 33, i2sz 33)
-  val () =
-    case+ $Vicpack.parse s of
-    | ~list_vt_nil() => ()
-    | packages => {
-      implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
-        val () = $Vicpack.print_vicpack( x)
-      }
-      val env = ()
-      val () = list_vt_foreach<$Vicpack.Vicpack>( packages )
-      implement list_vt_freelin$clear<$Vicpack.Vicpack>( x) = {
-        val () = $Vicpack.free x
-      }
-      val () = list_vt_freelin( packages)
-    }
+  val packages = $Vicpack.parse s
+  implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
+    val () = $Vicpack.print_vicpack( x)
+  }
+  val env = ()
+  val () = list_vt_foreach<$Vicpack.Vicpack>( packages )
+  val () = assertloc( list_vt_length packages = 2) // driver info and 0x54
+  implement list_vt_freelin$clear<$Vicpack.Vicpack>( x) = {
+    val () = $Vicpack.free x
+  }
+  val () = list_vt_freelin( packages)
   val () = $BS.free( view@raw | s)
 }

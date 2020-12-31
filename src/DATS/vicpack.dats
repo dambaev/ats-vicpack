@@ -73,7 +73,7 @@ let
   fun
     parse_packages
     {n,ln : nat | n <= 255}
-    {ilen,ioffset,cap,ucap,refcnt:nat | ilen >= n * 5}{dynamic:bool}{l:addr}
+    {ilen,ioffset,cap,ucap,refcnt:nat | ilen > 0; ilen == (ilen / 5) * 5}{dynamic:bool}{l:agz}
     .<n>.
     ( i: size_t n
     , acc: list_vt( Vicpack, ln)
@@ -86,18 +86,18 @@ let
     | length s < i2sz 5 => acc
     | _ =>
     let
-      var package_s: $BS.Bytestring0?
-      val () = package_s := $BS.take( i2sz 5, s)
-      val () = s := $BS.dropC( i2sz 5, s)
     in
-      case+ parse_package package_s of
-      | ~None_vt() => parse_packages( i - i2sz 1, acc, s) where {
-        val () = $BS.free( package_s, s)
-      }
-      | ~Some_vt( package) => parse_packages( i - i2sz 1, list_vt_cons( package, acc), s) where {
-        val () = $BS.free( package_s, s)
-      }
+      case+ parse_package s of
+      | ~None_vt() =>
+        if length s >= 5
+        then parse_packages( i - i2sz 1, acc, s)
+        else acc
+      | ~Some_vt( package) =>
+      if length s >= 5
+      then parse_packages( i - i2sz 1, list_vt_cons( package, acc), s)
+      else list_vt_cons( package, acc)
     end
+  val s_sz = length s
   var i: $BS.Bytestring0?
   val () = i := $BS.ref_bs_parent s
   val () = i := $BS.dropC( i2sz 5, i) // without header
@@ -112,7 +112,16 @@ in
     val packages_count = i2sz packages_count_i
   in
     ifcase
+    | s_sz < 13 => list_vt_nil() where { (* at least 1 package with payload *)
+      val () = $BS.free( i, s)
+    }
     | s[0] != i2c 0xFA => list_vt_nil() where {
+      val () = $BS.free( i, s)
+    }
+    | s[s_sz - 3] != i2c 0xCE => list_vt_nil() where {
+      val () = $BS.free( i, s)
+    }
+    | packages_count < 1 => list_vt_nil() where {
       val () = $BS.free( i, s)
     }
     | packages_count > 255 => list_vt_nil() where {
@@ -122,6 +131,7 @@ in
       val () = $BS.free( i, s)
     }
     | _ => res where {
+      val () = i := $BS.takeC( packages_count * i2sz 5, i)
       val res = parse_packages( packages_count, list_vt_nil(), i)
       val () = $BS.free( i, s)
     }
@@ -219,6 +229,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x08 => Some_vt( internal_battery_vt result) where {
     var data: $BS.Bytestring0?
@@ -274,6 +285,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x14 => Some_vt( temperature_vt(result )) where {
     var data: $BS.Bytestring0?
@@ -288,6 +300,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x15 => Some_vt( humidity_vt(result )) where {
     var data: $BS.Bytestring0?
@@ -301,6 +314,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x21 => Some_vt( co2_level_vt(result )) where {
     var data: $BS.Bytestring0?
@@ -314,6 +328,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x2B => Some_vt( voc_iaq_vt( @{state = uint162uc state, index=index} )) where {
     var data: $BS.Bytestring0?
@@ -329,6 +344,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x2C => Some_vt( voc_temperature_vt( u162double(raw_value) / 10.0 )) where {
     var data: $BS.Bytestring0?
@@ -342,6 +358,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   (* TODO: there is an error either in manual, which says / 10.0 and vicpack.js, which uses / 100.0 *)
   | 0x2D => Some_vt( voc_humidity_vt( u162double(raw_value) / 100.0 )) where {
@@ -356,6 +373,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x2E => Some_vt( voc_pressure_vt( u162double(raw_value) * 10.0 )) where {
     var data: $BS.Bytestring0?
@@ -369,6 +387,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
   | 0x2F =>
   let
@@ -385,6 +404,7 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   in
     if exp < 0
     then None_vt()
@@ -402,8 +422,11 @@ in
     val data1 = minus_addback( pf | data)
     val () = data := data1
     val () = $BS.free( data, s)
+    val () = s := $BS.dropC( i2sz 5, s)
   }
-  | _ => None_vt()
+  | _ => None_vt() where {
+    val () = s := $BS.dropC( i2sz 5, s)
+  }
 end
 
 implement print_vicpack( i) =
