@@ -76,26 +76,27 @@ let
     {ilen,ioffset,cap,ucap,refcnt:nat | ilen > 0; ilen == (ilen / 5) * 5}{dynamic:bool}{l:agz}
     .<n>.
     ( i: size_t n
-    , acc: list_vt( Vicpack, ln)
+    , acc0: list_vt( Vicpack, ln)
+    , acc1: size_t
     , s: &($BS.Bytestring_vtype(ilen, ioffset, cap, ucap, refcnt, dynamic, l)) >> $BS.Bytestring_vtype( olen, ooffset, cap, ucap, refcnt, dynamic, l)
     ):
     #[olen,ooffset,oln: nat]
-    list_vt( Vicpack, oln) =
+    ( list_vt( Vicpack, oln), size_t) =
     ifcase
-    | i = i2sz 0 => acc
-    | length s < i2sz 5 => acc
+    | i = i2sz 0 => (acc0, acc1)
+    | length s < i2sz 5 => (acc0, acc1)
     | _ =>
     let
     in
       case+ parse_package s of
       | ~None_vt() =>
         if length s >= 5
-        then parse_packages( i - i2sz 1, acc, s)
-        else acc
+        then parse_packages( i - i2sz 1, acc0, acc1 + i2sz 1, s)
+        else (acc0, acc1 + 1)
       | ~Some_vt( package) =>
       if length s >= 5
-      then parse_packages( i - i2sz 1, list_vt_cons( package, acc), s)
-      else list_vt_cons( package, acc)
+      then parse_packages( i - i2sz 1, list_vt_cons( package, acc0), acc1, s)
+      else (list_vt_cons( package, acc0), acc1)
     end
   val s_sz = length s
   var i: $BS.Bytestring0?
@@ -104,7 +105,7 @@ let
   val packages_count_i = g1ofg0( $UN.cast{int} ( s[4]))
 in
   if packages_count_i < 0
-  then list_vt_nil() where {
+  then (list_vt_nil(), i2sz 0) where {
     val () = $BS.free( i, s)
   }
   else
@@ -112,27 +113,27 @@ in
     val packages_count = i2sz packages_count_i
   in
     ifcase
-    | s_sz < 13 => list_vt_nil() where { (* at least 1 package with payload *)
+    | s_sz < 13 => (list_vt_nil(), i2sz 0) where { (* at least 1 package with payload *)
       val () = $BS.free( i, s)
     }
-    | s[0] != i2c 0xFA => list_vt_nil() where {
+    | s[0] != i2c 0xFA => (list_vt_nil(), i2sz 0) where {
       val () = $BS.free( i, s)
     }
-    | s[s_sz - 3] != i2c 0xCE => list_vt_nil() where {
+    | s[s_sz - 3] != i2c 0xCE => (list_vt_nil(), i2sz 0) where {
       val () = $BS.free( i, s)
     }
-    | packages_count < 1 => list_vt_nil() where {
+    | packages_count < 1 => (list_vt_nil(), i2sz 0) where {
       val () = $BS.free( i, s)
     }
-    | packages_count > 255 => list_vt_nil() where {
+    | packages_count > 255 => (list_vt_nil(), i2sz 0) where {
       val () = $BS.free( i, s)
     }
-    | length i < packages_count * (i2sz 5) => list_vt_nil() where {
+    | length i < packages_count * (i2sz 5) => (list_vt_nil(), i2sz 0) where {
       val () = $BS.free( i, s)
     }
     | _ => res where {
       val () = i := $BS.takeC( packages_count * i2sz 5, i)
-      val res = parse_packages( packages_count, list_vt_nil(), i)
+      val res = parse_packages( packages_count, list_vt_nil(), i2sz 0, i)
       val () = $BS.free( i, s)
     }
   end
