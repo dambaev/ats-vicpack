@@ -49,7 +49,7 @@ implement free_vicpack( i) =
 //  | ~rising_counter_vt(_) => ()
 //  | ~gps_data_vt(_) => ()
 //  | ~eco2_and_pir_vt(_) => ()
-//  | ~evoc_eco2_vt(_) => ()
+  | ~evoc_eco2_vt(_) => ()
 //  | ~device_id_vt(_) => ()
 //  | ~device_pin_vt(_) => ()
 //  | ~rssi_level_vt(_) => ()
@@ -210,7 +210,26 @@ extern castfn
   ):<> uint16
   
 
-implement parse_package( s) =
+(*
+  this function swaps bytes in terms of http://docs.vicotee.com/manuals/decodingpayload/QuickGuideVicPack in a uint32 value into 2 uint16 values
+*)
+fn
+  swap_words( i: uint32):<> (uint16, uint16) = ($UN.cast{uint16}first, $UN.cast{uint16}second) where {
+  infixr (+) .|.
+  overload .|. with g0uint_lor_uint32
+  infixr ( * ) .&.
+  overload .&. with g0uint_land_uint32
+  infixr (+) >>
+  overload >> with g0uint_lsr_uint32
+  infixr (+) <<
+  overload << with g0uint_lsl_uint32
+  val first = ((((i   .&.   ($UN.cast{uint32}0x00ff0000)) >> 16) .&. ($UN.cast{uint32}0xff)) << 8)
+            .|. ((i  .&.  ($UN.cast{uint32}0xff000000)) >> 24)  .&. ($UN.cast{uint32}0xff)
+  val second = (((i  .&.  ($UN.cast{uint32}0x000000ff)))        .&. ($UN.cast{uint32}0xff) << 8)
+             .|. ((i .&. ($UN.cast{uint32}0x0000ff00)) >> 8)    .&. ($UN.cast{uint32}0xff)
+}
+
+implement parse_package{len,offset,cap,ucap,refcnt}( s) =
 let
   prval () = $BS.lemma_bytestring_param( s)
   val package_type = c2i( s[0])
@@ -424,6 +443,90 @@ in
     val () = $BS.free( data, s)
     val () = s := $BS.dropC( i2sz 5, s)
   }
+  | 0x54 =>
+    let
+      val s_sz = length s
+    in
+      if s_sz < 20
+      then None_vt() where {
+        val () = s := $BS.dropC( i2sz 5, s)
+        prval () = prop_verify{len < 20}()
+      }
+      else
+        ifcase
+        | s[i2sz 5] != i2c 0x54 => None_vt() where {
+          val () = s := $BS.dropC( i2sz 5, s)
+          prval () = prop_verify{len >= 20}()
+        }
+        | s[10] != i2c 0x54 => None_vt() where {
+          val () = s := $BS.dropC( i2sz 5, s)
+        }
+        | s[15] != i2c 0x54 => None_vt() where {
+          val () = s := $BS.dropC( i2sz 5, s)
+        }
+        | _ => Some_vt( evoc_eco2_vt( evoc_eco2)) where {
+          val (pf0 | p1_p, p1_sz) = $BS.bs2bytes( s)
+(* we need this struct to have alignment of 1 byte in order to match data of the packages *)
+%{^
+#pragma pack( push, 1)
+struct evoc_eco2_t {
+  uint8_t  atslab__p0_f0;
+  uint32_t atslab__p0_f1;
+  uint8_t  atslab__p1_f0;
+  uint32_t atslab__p1_f1;
+  uint8_t  atslab__p2_f0;
+  uint32_t atslab__p2_f1;
+  uint8_t  atslab__p3_f0;
+  uint32_t atslab__p3_f1;
+};
+#pragma pack( pop)
+%}
+          typedef evoc_eco2_t = $extype_struct"struct evoc_eco2_t" of 
+            { p0_f0 = uint8
+            , p0_f1 = uint32
+            , p1_f0 = uint8
+            , p1_f1 = uint32
+            , p2_f0 = uint8
+            , p2_f1 = uint32
+            , p3_f0 = uint8
+            , p3_f1 = uint32
+            }
+          prval pf = bytes_takeout{evoc_eco2_t}(pf0)
+          val @{ p0_f0 = p0, p0_f1 = p0_f1
+              , p1_f0 = p1, p1_f1 = p1_f1
+              , p2_f0 = p2, p2_f1 = p2_f1
+              , p3_f0 = p3, p3_f1 = p3_f1
+              }:evoc_eco2_t = !p1_p // pattern patch the data in packages
+          val (static_iaq, eco2) = swap_words( p0_f1)
+          val (iqa_raw, voc_temperature_raw) = swap_words( p1_f1)
+          val (voc_humidity_raw, voc_pressure_raw) = swap_words( p2_f1)
+          val (ambient_light, noise_level_raw) = swap_words( p3_f1)
+          prval () = bytes_addback( pf0, pf)
+
+          val iqa = g0uint_land_uint16( iqa_raw, $UN.cast{uint16} 0x03ff)
+          val iqa_state = g0uint_land_uint16( g0uint_lsr_uint16( iqa_raw, 14), $UN.cast{uint16} 0x03)
+          val temperature = ($UN.cast{float}voc_temperature_raw) / 10.0f
+
+          val humidity = ($UN.cast{float}( voc_humidity_raw)) / ($UN.cast{float}100.0)
+          val pressure = ($UN.cast{float}(voc_pressure_raw)) / 10.0f
+
+          val noise_level = ($UN.cast{float}noise_level_raw)/ 10.0f
+
+          prval () = $BS.bytes_addback( pf0 | s)
+
+          val evoc_eco2 = @{ Static_IAQ = static_iaq
+                          , eCO2 = eco2
+                          , IQA = iqa
+                          , IQA_State = iqa_state
+                          , voc_temperature = temperature
+                          , voc_humidity = humidity
+                          , voc_pressure = pressure
+                          , ambient_light = ambient_light
+                          , noise_level = noise_level
+                          }
+          val () = s := $BS.dropC( i2sz 20, s)
+        }
+    end
   | _ => None_vt() where {
     val () = s := $BS.dropC( i2sz 5, s)
   }
@@ -553,10 +656,17 @@ implement print_vicpack( i) =
   | eco2_and_pir_vt(_) =>
     println!("eco2_and_pir")
 *)
-(*  
-  | evoc_eco2_vt(_) =>
-    println!("evoc_eco2")
-*)
+  | evoc_eco2_vt(v) =>
+    println!( "evoc_eco2: Static_IAQ: ", v.Static_IAQ
+            , ", eCO2: ", v.eCO2
+            , ", IQA: ", v.IQA
+            , ", IQA_State: ", v.IQA_State
+            , ", voc_temperature: ", v.voc_temperature
+            , ", voc_humidity: ", v.voc_humidity
+            , ", voc_pressure: ", v.voc_pressure
+            , ", ambient_light: ", v.ambient_light
+            , ", noise_level: ", v.noise_level
+            )
 (*  
   | device_id_vt(_) =>
     println!("device_id")
@@ -574,13 +684,19 @@ implement print_vicpack( i) =
     println!("cell_id")
 *)
 
-infixr (+) ::
-overload :: with list_vt_cons
-
-infixl (+) +++
-overload +++ with list_vt_cons
-
 implement package2kvs( i) = 
+let
+  fn
+    _list_vt_cons
+    {n:nat}
+    ( h: ($BS.BytestringNSH1, $BS.BytestringNSH1)
+    , t: list_vt( ($BS.BytestringNSH1, $BS.BytestringNSH1), n)
+    ):<>
+    list_vt( ($BS.BytestringNSH1, $BS.BytestringNSH1), n + 1) = list_vt_cons( h, t)
+
+  infixr (+) ::
+  overload :: with _list_vt_cons
+in
   case+ i of
 (*
   | driver_info_vt( s) =>
@@ -685,8 +801,19 @@ implement package2kvs( i) =
     println!("gps_data")
   | eco2_and_pir_vt(v) =>
     println!("eco2_and_pir")
-  | evoc_eco2_vt(v) =>
-    println!("evoc_eco2")
+*)
+  | evoc_eco2_vt(v) =>  
+    ( $BS.pack "Static_IAQ", $BS.pack v.Static_IAQ)
+    :: ($BS.pack "eCO2", $BS.pack v.eCO2)
+    :: ($BS.pack "IQA", $BS.pack v.IQA)
+    :: ($BS.pack "IQA_State", $BS.pack v.IQA_State)
+    :: ($BS.pack "voc_temperature", $BS.pack v.voc_temperature)
+    :: ($BS.pack "voc_humidity", $BS.pack v.voc_humidity)
+    :: ($BS.pack "voc_pressure", $BS.pack v.voc_pressure)
+    :: ($BS.pack "ambient_light", $BS.pack v.ambient_light)
+    :: ($BS.pack "noise_level", $BS.pack v.noise_level)
+    :: (list_vt_nil())
+(*
   | device_id_vt(v) =>
     println!("device_id")
   | device_pin_vt(v) =>
@@ -696,3 +823,4 @@ implement package2kvs( i) =
   | cell_id_vt(v) =>
     println!("cell_id")
 *)
+end

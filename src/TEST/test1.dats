@@ -44,10 +44,8 @@ implement main0() = {
                    , int2byte 0x19
                    , int2byte 0x40
                    , int2byte 0x2c //
-                   , int2byte 0x00
-                   , int2byte 0x00
-                   , int2byte 0xdb
-                   , int2byte 0x00
+                   , int2byte 0x00, int2byte 0x00
+                   , int2byte 0xdb, int2byte 0x00
                    , int2byte 0x2d //
                    , int2byte 0x00
                    , int2byte 0x00

@@ -70,19 +70,17 @@ datavtype Vicpack =
      , ambient_light = double
      }
 *)
-(*
   | evoc_eco2_vt of // 0x54
-    @{ Static_IAQ = uint32
-     , eCO2 = uint32
+    @{ Static_IAQ = uint16
+     , eCO2 = uint16
      , IQA = uint16
      , IQA_State = uint16
-     , voc_temperature = uint32
+     , voc_temperature = float
      , voc_humidity = float
      , voc_pressure = float
-     , ambient_light = uint32
+     , ambient_light = uint16
      , noise_level = float
      }
-*)
 //  | device_id_vt of uint64 // 0x83
 //  | device_pin_vt of uint32 // 0x84
 //  | rssi_level_vt of uint32 // 0x85
