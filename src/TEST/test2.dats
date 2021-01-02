@@ -17,12 +17,7 @@ implement main0() = {
                    , int2byte 0x01
                    , int2byte 0x01
                    , int2byte 0x00
-                   , int2byte 0x05
-                   , int2byte 0x01 //
-                   , int2byte 0x1b
-                   , int2byte 0x00
-                   , int2byte 0x02
-                   , int2byte 0x01
+                   , int2byte 0x04
                    , int2byte 0x54 // 1
                    , int2byte 0x01, int2byte 0xff
                    , int2byte 0x00, int2byte 0x1b
@@ -38,8 +33,9 @@ implement main0() = {
                    , int2byte 0xce
                    , int2byte 0xaa, int2byte 0xb2
                    )
-  val () = s := $BS.pack( view@raw| addr@raw, i2sz 33, i2sz 33)
-  val packages = $Vicpack.parse s
+  val () = s := $BS.pack( view@raw| addr@raw, i2sz 28, i2sz 28)
+  val (packages, unparsed) = $Vicpack.parse s
+  val () = assertloc( unparsed = 0)
   implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
     val () = $Vicpack.print_vicpack( x)
   }

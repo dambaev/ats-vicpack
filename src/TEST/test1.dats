@@ -17,12 +17,7 @@ implement main0() = {
                    , int2byte(0x01)
                    , int2byte(0x3c)
                    , int2byte(0x00)
-                   , int2byte(0x08)
-                   , int2byte(0x01) //
-                   , int2byte(0x02)
-                   , int2byte(0x00)
-                   , int2byte(0x01)
-                   , int2byte(0x01) 
+                   , int2byte(0x07)
                    , int2byte(0x14) //
                    , int2byte(0x00)
                    , int2byte(0x00)
@@ -59,20 +54,17 @@ implement main0() = {
                    , int2byte(0xce) //
                    , int2byte(0xf9)
                    , int2byte(0x98))
-  val () = s := $BS.pack( view@raw| addr@raw, i2sz 48, i2sz 48)
-  val () =
-    case+ $Vicpack.parse s of
-    | ~list_vt_nil() => ()
-    | packages => {
-      implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
-        val () = $Vicpack.print_vicpack( x)
-      }
-      val env = ()
-      val () = list_vt_foreach<$Vicpack.Vicpack>( packages )
-      implement list_vt_freelin$clear<$Vicpack.Vicpack>( x) = {
-        val () = $Vicpack.free x
-      }
-      val () = list_vt_freelin( packages)
-    }
+  val () = s := $BS.pack( view@raw| addr@raw, i2sz 43, i2sz 43)
+  val (packages, unsupported) = $Vicpack.parse s
+  implement list_vt_foreach$fwork<$Vicpack.Vicpack><void>( x, env) = {
+    val () = $Vicpack.print_vicpack( x)
+  }
+  val env = ()
+  val () = list_vt_foreach<$Vicpack.Vicpack>( packages )
+  implement list_vt_freelin$clear<$Vicpack.Vicpack>( x) = {
+    val () = $Vicpack.free x
+  }
+  val () = list_vt_freelin( packages)
   val () = $BS.free( view@raw | s)
+  val () = assertloc( unsupported = 0)
 }
