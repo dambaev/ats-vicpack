@@ -13,7 +13,7 @@ staload UN="prelude/SATS/unsafe.sats"
 
 implement free_vicpack( i) =
   case+ i of
-//  | ~driver_info_vt(_) => ()
+  | ~driver_info_vt() => ()
   | ~internal_battery_on_die_vt(_) => ()
   | ~internal_battery_vt(_) => ()
 //  | ~internal_temperature_vt(_) => ()
@@ -236,6 +236,9 @@ let
   val package_type = c2i( s[0])
 in
   case+ package_type of
+  | 0x01 => Some_vt( driver_info_vt()) where {
+    val () = s := $BS.dropC( i2sz 5, s)
+  }
 //  | 0x01 => Some_vt( driver_info_vt( @{ is_enabled=c2bool( s[1]), index=s[2], slot=s[3], type=s[4]}))
   | 0x07 => Some_vt( internal_battery_on_die_vt( result )) where {
     var data: $BS.Bytestring0?
@@ -535,8 +538,9 @@ end
 
 implement print_vicpack( i) =
   case+ i of
+  | driver_info_vt() =>
+    println!( "DRIVER_INFO")
 (*
-  | driver_info_vt( s) =>
     println!( "DRIVER_INFO: is_enabled = ", s.is_enabled, ", index=", c2i s.index, ", slot=", c2i s.slot, ", type=", c2i s.type)
 *)
   | internal_battery_on_die_vt(_) =>
@@ -699,6 +703,8 @@ let
   overload :: with _list_vt_cons
 in
   case+ i of
+  | driver_info_vt() =>
+    list_vt_nil()
 (*
   | driver_info_vt( s) =>
     ( $BS.pack "DRIVER_INFO.enabled", $BS.pack s.is_enabled)

@@ -6,8 +6,8 @@
 staload BS="{$LIBS}/ats-bytestring/SATS/bytestring.sats"
 
 datavtype Vicpack =
+  | driver_info_vt of ()// 0x01
 (*
-  | driver_info_vt of // 0x01
     @{ is_enabled=bool
     , index=uchar
     , slot=uchar
@@ -121,5 +121,5 @@ fn
   package2kvs
   ( i: !Vicpack
   ):
-  [n: pos]
+  [n: nat]
   list_vt( @($BS.BytestringNSH1, $BS.BytestringNSH1), n)
