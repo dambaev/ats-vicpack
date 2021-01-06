@@ -40,7 +40,7 @@ implement free_vicpack( i) =
   | ~voc_pressure_vt(_) => ()
   | ~voc_ambient_light_vt(_) => ()
   | ~voc_sound_peak_vt(_) => ()
-//  | ~tof_distance_vt(_) => ()
+  | ~tof_distance_vt(_) => ()
 //  | ~accelerometer_status_vt(_) => ()
 //  | ~voltage_vt(_) => ()
 //  | ~voltage_dff_vt(_) => ()
@@ -61,7 +61,7 @@ extern castfn
   {n: nat | n <= 255}
   ( i: int n
   ):<> char(n)
-  
+
 extern castfn
   c2i
   ( i: char
@@ -209,7 +209,23 @@ extern castfn
   u322u16
   ( i: uint32
   ):<> uint16
-  
+
+
+(*
+  this function swaps bytes in terms of http://docs.vicotee.com/manuals/decodingpayload/QuickGuideVicPack in a uint32 value into 2 uint16 values
+*)
+fn
+  swap_word( i: uint16):<> uint16 = (( i & $UN.cast{uint16}0xff00) >> 8)
+                                .|. (( i & $UN.cast{uint16}0x00ff) << 8)  where {
+  infixr (+) .|.
+  overload .|. with g0uint_lor_uint16
+  infixr ( * ) &
+  overload & with g0uint_land_uint16
+  infixr (+) >>
+  overload >> with g0uint_lsr_uint16
+  infixr (+) <<
+  overload << with g0uint_lsl_uint16
+}
 
 (*
   this function swaps bytes in terms of http://docs.vicotee.com/manuals/decodingpayload/QuickGuideVicPack in a uint32 value into 2 uint16 values
@@ -458,6 +474,25 @@ in
     val () = $BS.free( data, s)
     val () = s := $BS.dropC( i2sz 5, s)
   }
+  | 0x31 => Some_vt( tof_distance_vt( result)) where {
+    val () = s := $BS.dropC( i2sz 1, s) // 00 00 fe 9f
+    val ( pf | ptr, sz) = $BS.bs2bytes s (* take the pointer and proof *)
+    prval pf1 = bytes_takeout{uint32}( pf ) (* *)
+
+    val raw_value0 = ntohl !ptr // to LSB 9f fe 00 00
+    val raw_value:uint16 = swap_word( $UN.cast{uint16} raw_value0) // fe 9f
+    infixr ( * ) &
+    overload & with g0uint_land_uint16
+    overload >> with g0uint_lsr_uint16
+
+    val tof_state = (raw_value >> 13) & ($UN.cast{uint16} 7 )
+    val tof_distance = (raw_value & $UN.cast{uint16}0x1fff)
+    val result = @{ state = $UN.cast{uint8} tof_state, distance = tof_distance}
+    prval () = bytes_addback( pf, pf1)
+    prval () = $BS.bytes_addback( pf | s)
+
+    val () = s := $BS.dropC( i2sz 4, s)
+  }
   | 0x54 =>
     let
       val s_sz = length s
@@ -496,7 +531,7 @@ struct evoc_eco2_t {
 };
 #pragma pack( pop)
 %}
-          typedef evoc_eco2_t = $extype_struct"struct evoc_eco2_t" of 
+          typedef evoc_eco2_t = $extype_struct"struct evoc_eco2_t" of
             { p0_f0 = uint8
             , p0_f1 = uint32
             , p1_f0 = uint8
@@ -558,11 +593,11 @@ implement print_vicpack( i) =
     println!("internal_battery_on_die")
   | internal_battery_vt(_) =>
     println!("internal_battery")
-(*  
+(*
   | internal_temperature_vt(_) =>
     println!("internal_temperature")
 *)
-(*  
+(*
   | charge_vt(_) =>
     println!("charge")
 *)
@@ -570,57 +605,57 @@ implement print_vicpack( i) =
     println!("temperature: ", value)
   | humidity_vt( value) =>
     println!("humidity: ", value)
-(*  
+(*
   | presure_vt(_) =>
     println!("presure")
 *)
-(*  
+(*
   | acceleration_x_vt(_) =>
     println!("acceleration_x")
 *)
-(*  
+(*
   | acceleration_y_vt(_) =>
     println!("acceleration_y")
 *)
-(*  
+(*
   | acceleration_z_vt(_) =>
     println!("acceleration_z")
 *)
-(*  
+(*
   | switch_interrupt_vt(_) =>
     println!("switch_interrupt")
 *)
-(*  
+(*
   | audio_average_vt(_) =>
     println!("audio_average")
 *)
-(*  
+(*
   | audio_max_vt(_) =>
     println!("audio_max")
 *)
-(*  
+(*
   | audio_spl_vt(_) =>
     println!("audio_spl")
 *)
-(*  
+(*
   | ambient_light_visible_vt(_) =>
     println!("ambient_light_visible")
 *)
-(*  
+(*
   | ambient_light_ir_vt(_) =>
     println!("ambient_light_ir")
 *)
-(*  
+(*
   | ambient_light_uv_vt(_) =>
     println!("ambient_light_uv")
 *)
   | co2_level_vt(_) =>
     println!("co2_level")
-(*  
+(*
   | distance_vt(_) =>
     println!("distance")
 *)
-(*  
+(*
   | sample_rate_vt(_) =>
     println!("sample_rate")
 *)
@@ -636,39 +671,37 @@ implement print_vicpack( i) =
     println!("voc_ambient_light=", v)
   | voc_sound_peak_vt(v) =>
     println!("voc_sound_peak=", v)
-(*  
-  | tof_distance_vt(_) =>
-    println!("tof_distance")
-*)
-(*  
+  | tof_distance_vt(v) =>
+    println!("tof_distance: state=", v.state, ", distance=", v.distance)
+(*
   | accelerometer_status_vt(_) =>
     println!("accelerometer_status")
 *)
-(*  
+(*
   | voltage_vt(_) =>
     println!("voltage")
 *)
-(*  
+(*
   | voltage_dff_vt(_) =>
     println!("voltage_dff")
 *)
-(*  
+(*
   | voltage_ref_vt(_) =>
     println!("voltage_ref")
 *)
-(*  
+(*
   | falling_counter_vt(_) =>
     println!("falling_counter")
 *)
-(*  
+(*
   | rising_counter_vt(_) =>
     println!("rising_counter")
 *)
-(*  
+(*
   | gps_data_vt(_) =>
     println!("gps_data")
 *)
-(*  
+(*
   | eco2_and_pir_vt(_) =>
     println!("eco2_and_pir")
 *)
@@ -683,24 +716,24 @@ implement print_vicpack( i) =
             , ", ambient_light: ", v.ambient_light
             , ", noise_level: ", v.noise_level
             )
-(*  
+(*
   | device_id_vt(_) =>
     println!("device_id")
 *)
-(*  
+(*
   | device_pin_vt(_) =>
     println!("device_pin")
 *)
-(*  
+(*
   | rssi_level_vt(_) =>
     println!("rssi_level")
 *)
-(*  
+(*
   | cell_id_vt(_) =>
     println!("cell_id")
 *)
 
-implement package2kvs( i) = 
+implement package2kvs( i) =
 let
   fn
     _list_vt_cons
@@ -820,7 +853,7 @@ in
   | eco2_and_pir_vt(v) =>
     println!("eco2_and_pir")
 *)
-  | evoc_eco2_vt(v) =>  
+  | evoc_eco2_vt(v) =>
     ( $BS.pack "Static_IAQ", $BS.pack v.Static_IAQ)
     :: ($BS.pack "eCO2", $BS.pack v.eCO2)
     :: ($BS.pack "IQA", $BS.pack v.IQA)
@@ -831,6 +864,11 @@ in
     :: ($BS.pack "ambient_light", $BS.pack v.ambient_light)
     :: ($BS.pack "noise_level", $BS.pack v.noise_level)
     :: (list_vt_nil())
+  | tof_distance_vt(v) =>
+    ( $BS.pack "tof_distance.state", $BS.pack v.state)
+    :: ( $BS.pack "tof_distance.distance", $BS.pack v.distance)
+    :: list_vt_nil()
+
 (*
   | device_id_vt(v) =>
     println!("device_id")

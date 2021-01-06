@@ -46,12 +46,10 @@ datavtype Vicpack =
   | voc_pressure_vt of double // 0x2E
   | voc_ambient_light_vt of double // 0x2F
   | voc_sound_peak_vt of uint16 // 0x30
-(*
   | tof_distance_vt of // 0x31
-    @{ state=uchar
+    @{ state=uint8
      , distance=uint16
      }
-*)
 //  | accelerometer_status_vt of uint32 // 0x32
 //  | voltage_vt of double // 0x34
 //  | voltage_dff_vt of double // 0x35
