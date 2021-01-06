@@ -404,8 +404,19 @@ in
     val () = data := $BS.dropC( i2sz 1, data)
     val ( pf | ptr, sz) = $BS.bs2bytes data
     prval pf1 = bytes_takeout{uint32}( pf )
-    val netdata = ntohl !ptr
-    val raw_value = ntohs( u322u16 netdata)
+    val raw_value0 = ntohl !ptr
+    val raw_value1 = ((raw_value0 >> 8) & $UN.cast{uint32} 255) .|. ((raw_value0 & $UN.cast{uint32} 255) << 8) where {
+      overload >> with g0uint_lsr_uint32
+      overload << with g0uint_lsl_uint32
+      infixr (+) .|.
+      overload .|. with g0uint_lor_uint32
+      infixr ( * ) &
+      overload & with g0uint_land_uint32
+    }
+    val raw_value = $UN.cast{uint16}(raw_value1) & $UN.cast{uint16}(0xffff) where {
+      infixr ( * ) &
+      overload & with g0uint_land_uint16
+    }
     prval () = bytes_addback( pf, pf1)
     val data1 = minus_addback( pf | data)
     val () = data := data1
