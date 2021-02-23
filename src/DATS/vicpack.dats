@@ -260,7 +260,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val result = ntohl netdata
@@ -289,7 +289,7 @@ in
     val meas_sz = i2sz 6
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val raw = ntohl netdata
@@ -330,7 +330,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val raw = ntohl netdata
@@ -345,7 +345,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val result = g0uint_sub_uint32( g0uint_div_uint32( g0uint_mul_uint32((ntohl netdata), i2u32(125)), i2u32(65536)), i2u32(6))
@@ -359,7 +359,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = !ptr
     val result = ntohl netdata
@@ -373,7 +373,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata:uint32 = ntohl !ptr
     val raw_value = ntohs ( u322u16 netdata)
@@ -389,7 +389,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata:uint32 = ntohl !ptr
     val raw_value = g0uint_land_uint16( ntohs (u322u16 netdata), i2u16 0xFFFF)
@@ -404,7 +404,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = ntohl !ptr
     val raw_value = g0uint_land_uint16( ntohs (u322u16 netdata), i2u16 0xFFFF)
@@ -418,7 +418,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val raw_value0 = ntohl !ptr
     val raw_value1 = ((raw_value0 >> 8) & $UN.cast{uint32} 255) .|. ((raw_value0 & $UN.cast{uint32} 255) << 8) where {
@@ -444,7 +444,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = ntohl !ptr
     val raw_value = ntohs (u322u16 netdata)
@@ -464,7 +464,7 @@ in
     var data: $BS.Bytestring0?
     val () = data := $BS.ref_bs_parent s
     val () = data := $BS.dropC( i2sz 1, data)
-    val ( pf | ptr, sz) = $BS.bs2bytes data
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro data
     prval pf1 = bytes_takeout{uint32}( pf )
     val netdata = ntohl !ptr
     val raw_value = ntohs (u322u16 netdata)
@@ -476,7 +476,7 @@ in
   }
   | 0x31 => Some_vt( tof_distance_vt( result)) where {
     val () = s := $BS.dropC( i2sz 1, s) // 00 00 fe 9f
-    val ( pf | ptr, sz) = $BS.bs2bytes s (* take the pointer and proof *)
+    val ( pf | ptr, sz) = $BS.bs2bytes_ro s (* take the pointer and proof *)
     prval pf1 = bytes_takeout{uint32}( pf ) (* *)
 
     val raw_value0 = ntohl !ptr // to LSB 9f fe 00 00
@@ -515,7 +515,7 @@ in
           val () = s := $BS.dropC( i2sz 5, s)
         }
         | _ => Some_vt( evoc_eco2_vt( evoc_eco2)) where {
-          val (pf0 | p1_p, p1_sz) = $BS.bs2bytes( s)
+          val (pf0 | p1_p, p1_sz) = $BS.bs2bytes_ro( s)
 (* we need this struct to have alignment of 1 byte in order to match data of the packages *)
 %{^
 #pragma pack( push, 1)
